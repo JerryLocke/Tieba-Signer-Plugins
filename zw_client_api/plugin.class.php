@@ -10,7 +10,7 @@ class plugin_zw_client_api extends Plugin {
 		$msg = "未登录！";
 		$data = array();
 		if ($_SERVER['HTTP_USER_AGENT'] != 'Android Client For Tieba Signer') {
-			exit(array('status' => -1, 'msg' => '非法操作', 'data' => ''));
+			exit(json_encode(array('status' => -1, 'msg' => '非法操作', 'data' => '')));
 		} elseif ($_GET['a'] == 'api_info') {
 			$status = 0;
 			$data = array('version' => '1.0.0', 'site' => $_SERVER["HTTP_HOST"]);
@@ -39,6 +39,11 @@ class plugin_zw_client_api extends Plugin {
 			$status = 0;
 			$msg = "";
 			switch ($_GET['a']) {
+				case 'baidu_account_info':
+					$msg = "百度账号信息";
+					$baidu_account_data = get_baidu_userinfo($uid);
+					$data = array('bd_username' => $baidu_account_data['data']['user_name_show'], 'bd_email' => $baidu_account_data['data']['email'], 'bd_mobilephone' => $baidu_account_data['data']['mobilephone']);
+					break;
 				case 'sign_log':
 					$msg = "获取成功";
 					$date = intval($_GET['date']);
