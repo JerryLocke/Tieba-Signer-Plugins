@@ -8,7 +8,7 @@ class plugin_zw_client_api extends Plugin {
 		global $uid;
 		$status = -1;
 		$msg = "未登录！";
-		$data = array();
+		$data = array('time' => time());
 		if ($_SERVER['HTTP_USER_AGENT'] != 'Android Client For Tieba Signer') {
 			exit(json_encode(array('status' => -1, 'msg' => '非法操作', 'data' => '')));
 		} elseif ($_GET['a'] == 'api_info') {
