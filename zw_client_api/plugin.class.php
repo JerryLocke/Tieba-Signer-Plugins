@@ -9,9 +9,13 @@ class plugin_zw_client_api extends Plugin {
 		$status = -1;
 		$msg = "未登录！";
 		$data = array('time' => time());
-		if ($_SERVER['HTTP_USER_AGENT'] != 'Android Client For Tieba Signer') {
-			exit(json_encode(array('status' => -1, 'msg' => '非法操作', 'data' => '')));
-		} elseif ($_GET['a'] == 'api_info') {
+		// NOTICE : Just For Test;
+		/**
+		 * if ($_SERVER['HTTP_USER_AGENT'] != 'Android Client For Tieba Signer') {
+		 * exit(json_encode(array('status' => -1, 'msg' => '非法操作', 'data' => '')));
+		 * } else
+		 */
+		if ($_GET['a'] == 'api_info') {
 			$status = 0;
 			$data = array('version' => '1.0.0', 'site' => $_SERVER["HTTP_HOST"]);
 		} elseif ($_GET['a'] == 'do_login') {
@@ -38,11 +42,14 @@ class plugin_zw_client_api extends Plugin {
 		} elseif ($uid) {
 			$status = 0;
 			$msg = "";
+			require_once ROOT . './plugins/zw_client_api/baidu.php';
+			$baidu = new baidu(get_cookie($uid));
 			switch ($_GET['a']) {
 				case 'baidu_account_info':
 					$msg = "百度账号信息";
-					$baidu_account_data = get_baidu_userinfo($uid);
-					$data = array('bd_username' => $baidu_account_data['data']['user_name_show'], 'bd_email' => $baidu_account_data['data']['email'], 'bd_mobilephone' => $baidu_account_data['data']['mobilephone']);
+					$baidu_account_info = get_baidu_userinfo($uid);
+					$baidu_account_extra_info = $baidu -> get_user_info();
+					$data = array('username' => $baidu_account_info['data']['user_name_show'], 'email' => $baidu_account_info['data']['email'], 'mobilephone' => $baidu_account_info['data']['mobilephone'], 'sex' => $baidu_account_extra_info['i']['sex'], 'tb_age' => $baidu_account_extra_info['i']['tb_age'], 'fans_num' => $baidu_account_extra_info['i']['fans_num'], 'follow_num' => $baidu_account_extra_info['i']['concern_num'], 'tb_num' => $baidu_account_extra_info['i']['like_forum_num'],);
 					break;
 				case 'sign_log':
 					$msg = "获取成功";
@@ -56,6 +63,11 @@ class plugin_zw_client_api extends Plugin {
 					$data['count'] = count($data['log']);
 					$data['before_date'] = DB :: result_first("SELECT date FROM sign_log WHERE uid='{$uid}' AND date<'{$date}' ORDER BY date DESC LIMIT 0,1");
 					$data['after_date'] = DB :: result_first("SELECT date FROM sign_log WHERE uid='{$uid}' AND date>'{$date}' ORDER BY date ASC LIMIT 0,1");
+					break;
+				// NOTICE : Just For Test;
+				case 'test':
+					$data = $baidu -> get_user_info(); 
+					// echo var_dump($baidu);
 					break;
 			} 
 		} 
