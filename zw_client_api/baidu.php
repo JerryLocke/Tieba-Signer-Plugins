@@ -1,27 +1,28 @@
 <?php
 /**
  * baidu class | Version 0.1.1 | Copyright 2014, Cai Cai | Released under the MIT license
+ * login、sign、post、zan、meizhi、tdou
  */
 class baidu {
+	public $useZlib = false;
+	public $returnThis = false;
+	public $lastFetch = array();
+	public $lastReturn = array();
+	public $lastForumData = array();
 	protected $un = '';
 	protected $uid = '';
 	protected $tbs = '';
 	protected $bduss = '';
 	protected $cookies = '';
-	public $use_z_lib = false;
-	public $return_this = false;
-	public $last_fetch = array();
-	public $last_return = array();
-	public $last_formdata = array();
 	protected $client = array();
-	protected $formdata = array();
-	protected $forum_pages = array();
+	protected $forumData = array();
+	protected $forumPages = array();
 	public function __construct($cookie = null, $client = null) {
 		if (!is_null($cookie)) {
 			$cookie = trim($cookie);
 			if (stripos($cookie, 'bduss=') === false && stripos($cookie, ';') === false) {
 				$this -> bduss = $cookie;
-			} elseif (stripos($cookie, 'bduss=') === true && stripos($cookie, ';') === false) {
+			} elseif (stripos($cookie, 'bduss=') !== false && stripos($cookie, ';') === false) {
 				$this -> bduss = substr($cookie, 6);
 			} elseif (preg_match('/bduss\s?=\s?([^ ;]*)/i', $cookie, $matches)) {
 				$this -> bduss = $matches[1];
@@ -30,7 +31,8 @@ class baidu {
 			} 
 			$this -> cookies = 'BAIDUID=' . strtoupper(self :: random(32)) . ':FG=1;BDUSS=' . $this -> bduss . ';';
 		} 
-		if (is_null($client)) $this -> client = self :: get_client();
+		if (is_null($client)) $this -> client = self :: getClient();
+		else $this -> client = $client;
 	} 
 	protected function fetch($url, $mobile = true, $usecookie = true) {
 		$ch = curl_init($url);
@@ -44,24 +46,24 @@ class baidu {
 				'stTimesNum' => '0',
 				'timestamp' => time() . self :: random(3, true)
 				);
-			$predata = $this -> client + $this -> formdata + $common_data;
+			$predata = $this -> client + $this -> forumData + $common_data;
 			ksort($predata);
-			$this -> formdata = array();
+			$this -> forumData = array();
 			if ($usecookie === true) {
-				$this -> formdata['BDUSS'] = $this -> bduss;
+				$this -> forumData['BDUSS'] = $this -> bduss;
 			} 
-			$this -> formdata += $predata;
+			$this -> forumData += $predata;
 			$sign_str = '';
-			foreach($this -> formdata as $key => $value)
+			foreach($this -> forumData as $key => $value)
 			$sign_str .= $key . '=' . $value;
 			$sign = strtoupper(md5($sign_str . 'tiebaclient!!!'));
-			$this -> formdata['sign'] = $sign;
+			$this -> forumData['sign'] = $sign;
 			$http_header = array('User-Agent: BaiduTieba for Android 6.0.1',
 				'Content-Type: application/x-www-form-urlencoded',
 				'Host: c.tieba.baidu.com',
 				'Connection: Keep-Alive'
 				);
-			if ($this -> use_z_lib === true) $http_header[] = 'Accept-Encoding: gzip';
+			if ($this -> useZlib === true) $http_header[] = 'Accept-Encoding: gzip';
 		} else {
 			$http_header = array('User-Agent: Mozilla/5.0 (Windows NT 6.3; rv:29.0) Gecko/20100101 Firefox/29.0',
 				'Connection: Keep-Alive'
@@ -72,11 +74,11 @@ class baidu {
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($ch, CURLOPT_POST, true);
 		curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($this -> formdata));
+		curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($this -> forumData));
 		$res_json = curl_exec($ch);
 		curl_close($ch);
 		if (empty($res_json)) throw new Exception('网络连接失败', 20);
-		if ($this -> use_z_lib === true) $res_json = gzdecode($res_json);
+		if ($this -> useZlib === true) $res_json = gzdecode($res_json);
 		$result = @json_decode($res_json, true);
 		if ($mobile === true) {
 			if (!array_key_exists('error_code', $result)) throw new Exception('网络连接失败', 20);
@@ -84,12 +86,12 @@ class baidu {
 			if (!empty($result['user']['id'])) $this -> uid = $result['user']['id'];
 			if (!empty($result['user']['name'])) $this -> un = $result['user']['name'];
 		} 
-		$this -> last_formdata = $this -> formdata;
-		$this -> formdata = array();
-		$this -> last_fetch = $result;
+		$this -> last_forumData = $this -> forumData;
+		$this -> forumData = array();
+		$this -> lastFetch = $result;
 		return $result;
 	} 
-	public static function simple_fetch($url) {
+	public static function simpleFetch($url) {
 		$ch = curl_init($url);
 		curl_setopt($ch, CURLOPT_HTTPHEADER, array('User-Agent: Mozilla/5.0 (Windows NT 6.3; rv:29.0) Gecko/20100101 Firefox/29.0',
 				'Connection: Keep-Alive'
@@ -100,7 +102,7 @@ class baidu {
 		$content = json_decode($content, true);
 		return $content;
 	} 
-	protected function common_return($data) {
+	protected function commonReturn($data) {
 		$result = array();
 		if (array_key_exists('no', $data)) $data['error_code'] = $data['no'];
 		if (array_key_exists('error', $data)) $data['error_msg'] = $data['error'];
@@ -113,9 +115,13 @@ class baidu {
 		} 
 		$result['error_code'] = $data['error_code'];
 		$result['error_msg'] = $data['error_msg'];
-		if (isset($data['i'])) $result['i'] = $data['i'];
-		$this -> last_return = $result;
-		if ($this -> return_this === true) return $this;
+		if (isset($data['i'])) {
+			foreach ($data['i'] as $key => $value) {
+				$result[$key] = $value;
+			} 
+		} 
+		$this -> lastReturn = $result;
+		if ($this -> returnThis === true) return $this;
 		return $result;
 	} 
 	public static function random($length, $numeric = false) {
@@ -128,7 +134,7 @@ class baidu {
 		} 
 		return $hash;
 	} 
-	public static function get_client($type = null, $model = null, $version = null) {
+	public static function getClient($type = null, $model = null, $version = null) {
 		$client = array('_client_id' => 'wappc_138' . self :: random(10, true) . '_' . self :: random(3, true),
 			'_client_type' => is_null($type)?rand(1, 4):$type,
 			'_client_version' => is_null($version)?'6.0.1':$version,
@@ -138,7 +144,7 @@ class baidu {
 			);
 		return $client;
 	} 
-	static function get_content() {
+	public static function getRandomContent() {
 		$text = <<<EOF
 第一次的爱，始终无法轻描淡写。
 我对你，只有放弃，没有忘记。
@@ -150,8 +156,8 @@ EOF;
 		$content = $contents[array_rand($contents)];
 		return $content;
 	} 
-	public function get_forum_page($kw) {
-		$this -> formdata = array('kw' => $kw,
+	public function fetchForumPage($kw) {
+		$this -> forumData = array('kw' => $kw,
 			'pn' => '1',
 			'q_type' => '2',
 			'rn' => '35',
@@ -162,7 +168,7 @@ EOF;
 			'with_group' => '1'
 			);
 		$result_raw = $this -> fetch('http://c.tieba.baidu.com/c/f/frs/page');
-		$forum = &$this -> forum_pages[$kw];
+		$forum = &$this -> forumPages[$kw];
 		$forum['fid'] = $result_raw['forum']['id'];
 		$forum['name'] = $result_raw['forum']['name'];
 		$forum['user_level'] = $result_raw['forum']['user_level'];
@@ -172,7 +178,7 @@ EOF;
 			$thread = $result_raw['thread_list'][$i];
 			$tlist = &$forum['tlist'][$i];
 			$tlist['tid'] = $thread['id'];
-			$tlist['is_top'] = $thread['is_top'];
+			@$tlist['is_top'] = $thread['is_top'];
 			$tlist['is_posted'] = 0;
 			if (!empty($thread['first_post_id'])) {
 				$tlist['pid'] = $thread['first_post_id'];
@@ -180,10 +186,9 @@ EOF;
 			} 
 		} 
 	} 
-	public function forum_info($kw, $type = 'forum') {
-		if (!array_key_exists($kw, $this -> forum_pages)) $this -> get_forum_page($kw);
-		$forum = &$this -> forum_pages[$kw];
-		if ($type === 'zan' && empty($forum['tlist'][0]['pid'])) throw new Exception('无法取得pid', 40);
+	public function getForumInfo($kw, $type = 'forum') {
+		if (!array_key_exists($kw, $this -> forumPages)) $this -> fetchForumPage($kw);
+		$forum = &$this -> forumPages[$kw];
 		switch ($type) {
 			case 'post':
 				$post_threads = array();
@@ -191,7 +196,7 @@ EOF;
 					if ($thread['is_top'] == 0 && $thread['is_posted'] == 0) $post_threads[] = $thread;
 				} 
 				$post_thread = $post_threads[array_rand($post_threads)];
-				$info['tid'] = $post_thread['tid'];
+				$info = $post_thread['tid'];
 				break;
 			case 'zan':
 				$zan_threads = array();
@@ -201,6 +206,13 @@ EOF;
 				if (!count($zan_threads)) throw new Exception('无可赞的帖子', 60);
 				$zan_thread = $zan_threads[array_rand($zan_threads)];
 				$info['tid'] = $zan_thread['tid'];
+				if (empty($zan_thread['pid'])) {
+					$temThreadPage = $this -> fetchThreadPage($info['tid']);
+					$zan_thread['pid'] = $temThreadPage['first_pid'];
+				} 
+				if (empty($zan_thread['pid'])) {
+					throw new Exception('无法取得pid', 40);
+				} 
 				$info['pid'] = $zan_thread['pid'];
 				break;
 			case 'forum':
@@ -212,8 +224,25 @@ EOF;
 		} 
 		return $info;
 	} 
-	public function get_user_info() {
-		$this -> formdata = array('has_plist' => '1',
+	public function fetchThreadPage($tid) {
+		$this -> forumData = array('back' => '0',
+			'kz' => $tid,
+			'pn' => '1',
+			'q_type' => '2',
+			'rn' => '30',
+			'scr_dip' => '1.5',
+			'scr_h' => '800',
+			'scr_w' => '480',
+			'with_floor' => '1'
+			);
+		$result = $this -> fetch('http://c.tieba.baidu.com/c/f/pb/page');
+		return array('first_pid' => $result['thread']['post_id']/**
+			 * 一楼的postid
+			 */
+			);
+	} 
+	public function fetchClientUserInfo() {
+		$this -> forumData = array('has_plist' => '1',
 			'is_owner' => '1',
 			'need_post_count' => '1',
 			'pn' => '1',
@@ -227,37 +256,37 @@ EOF;
 			'concern_num' => $result['user']['concern_num'],
 			'like_forum_num' => $result['user']['like_forum_num']
 			);
-		return $this -> common_return($result);
+		return $this -> commonReturn($result);
 	} 
-	public function web_tbs() {
+	public function fetchWebTbs() {
 		if (!empty($this -> tbs)) return $this -> tbs;
 		$result = $this -> fetch('http://tieba.baidu.com/dc/common/tbs', false);
 		if (array_key_exists('is_login', $result) === true && $result['is_login'] === 0) throw new Exception(var_dump($result));
 		return $result['tbs'];
 	} 
-	public function relogin() {
-		$this -> formdata = array('bdusstoken' => $this -> bduss
+	public function clientRelogin() {
+		$this -> forumData = array('bdusstoken' => $this -> bduss
 			);
 		$result = $this -> fetch('http://c.tieba.baidu.com/c/s/login');
 		if ($result['error_code'] != 0) throw new Exception($result['error_msg'], 30);
 	} 
 	public function un() {
-		if (empty($this -> un)) $this -> relogin();
+		if (empty($this -> un)) $this -> clientRelogin();
 		return $this -> un;
 	} 
 	public function uid() {
-		if (empty($this -> uid)) $this -> relogin();
+		if (empty($this -> uid)) $this -> clientRelogin();
 		return $this -> uid;
 	} 
 	public function tbs() {
-		if (empty($this -> tbs)) $this -> relogin();
+		if (empty($this -> tbs)) $this -> clientRelogin();
 		return $this -> tbs;
 	} 
-	public function userinfo() {
+	public function fetchWebUserInfo() {
 		$result = $this -> fetch('http://tieba.baidu.com/f/user/json_userinfo', false);
 		return $result['data'];
 	} 
-	public static function userpanel($un) {
+	public static function fetchWebUserPanel($un) {
 		$result = self :: simple_fetch('http://tieba.baidu.com/home/get/panel?ie=utf-8&un=' . urlencode($un));
 		$data = array();
 		if (@count($result['data']['icon_info'])) {
@@ -274,36 +303,8 @@ EOF;
 			);
 		return $data;
 	} 
-	public function get_like_forum_list() {
-		$this -> formdata = array('like_forum' => '1',
-			'recommend' => '0',
-			'topic' => '0'
-			);
-		$result = $this -> fetch('http://c.tieba.baidu.com/c/f/forum/forumrecommend');
-		return $result['like_forum'];
-	} 
-	public function get_msign_forum_list() {
-		$this -> formdata = array('user_id' => $this -> uid()
-			);
-		$result = $this -> fetch('http://c.tieba.baidu.com/c/f/forum/getforumlist');
-		return $result['forum_info'];
-	} 
-	public function msign() {
-		$forums = $this -> get_msign_forum_list();
-		$forum_ids = '';
-		foreach($forums as $forum) {
-			$forum_ids .= $forum . ',';
-		} 
-		$forum_ids = substr($forum_ids, 0, -1);
-		$this -> formdata = array('forum_ids' => '',
-			'tbs' => $this -> tbs(),
-			'user_id' => $this -> uid()
-			);
-		$result = $this -> fetch('http://c.tieba.baidu.com/c/c/forum/msign');
-		return $result['forum_info'];
-	} 
 	public function login($un, $passwd, $vcode = null, $vcode_md5 = null) {
-		$this -> formdata = array('isphone' => '0',
+		$this -> forumData = array('isphone' => '0',
 			'passwd' => $passwd,
 			'un' => $un
 			);
@@ -311,7 +312,7 @@ EOF;
 			$vcode_data = array('vcode' => $vcode,
 				'vcode_md5' => $vcode_md5
 				);
-			$this -> formdata += $vcode_data;
+			$this -> forumData += $vcode_data;
 		} 
 		$result = $this -> fetch('http://c.tieba.baidu.com/c/s/login', true, false);
 		if ($result['error_code'] == 0) {
@@ -325,22 +326,50 @@ EOF;
 				"vcode_pic_url" => $result['anti']['vcode_pic_url']
 				);
 		} 
-		return $this -> common_return($result);
+		return $this -> commonReturn($result);
 	} 
 	public function sign($kw, $fid = null) {
-		if (is_null($fid)) $fid = $this -> forum_info($kw)['fid'];
-		$this -> formdata = array('fid' => $fid,
+		if (is_null($fid)) $fid = $this -> getForumInfo($kw, 'fid');
+		$this -> forumData = array('fid' => $fid,
 			'kw' => $kw,
 			'tbs' => $this -> tbs()
 			);
 		$result = $this -> fetch('http://c.tieba.baidu.com/c/c/forum/sign');
-		return $this -> common_return($result);
+		return $this -> commonReturn($result);
+	} 
+	public function fetchClientLikedForumList() {
+		$this -> forumData = array('like_forum' => '1',
+			'recommend' => '0',
+			'topic' => '0'
+			);
+		$result = $this -> fetch('http://c.tieba.baidu.com/c/f/forum/forumrecommend');
+		return $result['like_forum'];
+	} 
+	public function fetchClientMultisignForumList() {
+		$this -> forumData = array('user_id' => $this -> uid()
+			);
+		$result = $this -> fetch('http://c.tieba.baidu.com/c/f/forum/getforumlist');
+		return $result['forum_info'];
+	} 
+	public function multiSign() {
+		$forums = $this -> get_msign_forum_list();
+		$forum_ids = '';
+		foreach($forums as $forum) {
+			$forum_ids .= $forum . ',';
+		} 
+		$forum_ids = substr($forum_ids, 0, -1);
+		$this -> forumData = array('forum_ids' => '',
+			'tbs' => $this -> tbs(),
+			'user_id' => $this -> uid()
+			);
+		$result = $this -> fetch('http://c.tieba.baidu.com/c/c/forum/msign');
+		return $result['forum_info'];
 	} 
 	public function post($kw, $fid = null, $tid = null, $content = null) {
-		if (is_null($fid)) $fid = $this -> forum_info($kw)['fid'];
-		if (is_null($tid)) $tid = $this -> forum_info($kw, 'post')['tid'];
-		if (is_null($content)) $content = self :: get_content();
-		$this -> formdata = array('fid' => $fid,
+		if (is_null($fid)) $fid = $this -> getForumInfo($kw, 'fid');
+		if (is_null($tid)) $tid = $this -> getForumInfo($kw, 'post');
+		if (is_null($content)) $content = self :: getRandomContent();
+		$this -> forumData = array('fid' => $fid,
 			'tid' => $tid,
 			'kw' => $kw,
 			'content' => $content,
@@ -355,13 +384,13 @@ EOF;
 			"vcode_md5" => $result['info']['vcode_md5'],
 			"vcode_type" => $result['info']['vcode_type']
 			);
-		return $this -> common_return($result); 
+		return $this -> commonReturn($result); 
 		// (5=>"需要输入验证码"),(7=>"您的操作太频繁了！"),(8=>"您已经被封禁")
 	} 
 	public function zan($kw) {
-		$data = $this -> forum_info($kw, 'zan');
-		$forum = &$this -> forum_pages[$kw];
-		$this -> formdata = array('action' => 'like',
+		$data = $this -> getForumInfo($kw, 'zan');
+		$forum = &$this -> forumPages[$kw];
+		$this -> forumData = array('action' => 'like',
 			'post_id' => $data['pid'],
 			'st_param' => 'pb',
 			'st_type' => 'like',
@@ -375,7 +404,7 @@ EOF;
 		} 
 		$result['i'] = array('tid' => $data['tid']
 			);
-		return $this -> common_return($result);
+		return $this -> commonReturn($result);
 	} 
 	public function meizhi($meizhi_un, $votetype = 0, $meizhi_uid = null, $meizhi_kw = null, $meizhi_fid = null) {
 		$votetype_list = array('meizhi',
@@ -383,8 +412,8 @@ EOF;
 			'weiniang',
 			'renyao'
 			);
-		if (is_null($meizhi_uid)) $meizhi_uid = self :: userpanel($meizhi_un)['uid'];
-		$this -> formdata = array('content' => '',
+		if (is_null($meizhi_uid)) $meizhi_uid = self :: fetchWebUserPanel($meizhi_un)['uid'];
+		$this -> forumData = array('content' => '',
 			'tbs' => $this -> tbs(),
 			'fid' => $meizhi_fid?$meizhi_fid:'2689814',
 			'kw' => $meizhi_kw?$meizhi_kw:'妹纸',
@@ -407,12 +436,12 @@ EOF;
 				'levelup_left' => $result['data']['levelup_left']
 				);
 		} 
-		return $this -> common_return($result); 
+		return $this -> commonReturn($result); 
 		// 230308 错误原因不明，解决方法不明
 		// 2130008 您已经投过了，请过四小时再来投
 	} 
-	public function meizhi_panel($uid) {
-		$this -> formdata = array('user_id' => $uid,
+	public function fetchWebMeizhiPanel($uid) {
+		$this -> forumData = array('user_id' => $uid,
 			'type' => '1'
 			);
 		$result = $this -> fetch('http://tieba.baidu.com/encourage/get/meizhi/panel', false);
@@ -427,25 +456,25 @@ EOF;
 			 * 升级还需票数
 			 */
 			);
-		return $this -> common_return($result);
+		return $this -> commonReturn($result);
 	} 
-	public function meizhi_bulid_string() {
-		$result = $this -> last_return;
+	public function getMeizhiStatusString() {
+		$result = $this -> lastReturn;
 		$resultstr = '当前的妹纸票：' . $result['i']['meizhi'] . '，伪娘票：' . $result['i']['weiniang'] . '，人妖票：' . $result['i']['renyao'] . '。<br>认证等级为' . $result['i']['level'] . '级，再获得' . $result['i']['exp_value'] . '点经验和' . $result['i']['levelup_left'] . '张妹纸票后升级。';
 		return $resultstr;
 	} 
 	public function tdou() {
 		$got_tdou = false;
 		$total_score = 0;
-		$this -> formdata = array('ie' => 'utf-8',
+		$this -> forumData = array('ie' => 'utf-8',
 			'tbs' => $this -> tbs(),
 			'fr' => 'frs'
 			);
-		$result = $this -> fetch('http://tieba.baidu.com/tbscore/timebeat', false); // 查看状态
+		$result = $this -> fetch('http://tieba.baidu.com/tbscore/timebeat', false); // 查看状态，是否时间已到
 		$retime = $result['data']['time_stat'];
 		if ($retime['interval_begin_time'] + $retime['time_len'] < $retime['now_time'] && $retime['time_has_score'] === true) {
 			// 如果可以获取时间奖励，就fetch之
-			$this -> formdata = array('ie' => 'utf-8',
+			$this -> forumData = array('ie' => 'utf-8',
 				'tbs' => $this -> tbs(),
 				'fr' => 'frs'
 				);
@@ -457,7 +486,7 @@ EOF;
 				// 取每个gift
 				if ($gift['gift_type'] == 1) $type = 'time';
 				else $type = 'rand';
-				$this -> formdata = array('ie' => 'utf-8',
+				$this -> forumData = array('ie' => 'utf-8',
 					'type' => $type,
 					'tbs' => $this -> tbs(),
 					'gift_key' => $gift['gift_key']
@@ -474,22 +503,30 @@ EOF;
 				$total_score += $score['score'];
 			} 
 		} 
-		$result['i'] = array('time_has_score' => $result['data']['time_stat']['time_has_score'],
-			'got_tdou' => $got_tdou,
-			'total_score' => $total_score,
-			'score_info' => $score_info
+		$result['i'] = array('time_has_score' => $result['data']['time_stat']['time_has_score'],/**
+			 * bull 时间奖励是否已经领完
+			 */
+			'got_tdou' => $got_tdou,/**
+			 * 是否获取到豆票
+			 */
+			'total_score' => $total_score,/**
+			 * 获取的数目
+			 */
+			'score_info' => $score_info/**
+			 * 详细信息
+			 */
 			);
-		return $this -> common_return($result);
+		return $this -> commonReturn($result);
 	} 
-	public function tdou_lottery($free = true) {
+	public function tdouLottery($free = true) {
 		if ($free === true) {
-			$this -> formdata = array('kw' => '',
+			$this -> forumData = array('kw' => '',
 				'tbs' => $this -> tbs()
 				);
 			$result = $this -> fetch("http://tieba.baidu.com/tbmall/lottery/tableinfo", false);
 			if ($result['data']['new_price'] != 0) throw new Exception('免费抽奖机会已经用完', 90);
 		} 
-		$this -> formdata = array('kw' => '',
+		$this -> forumData = array('kw' => '',
 			'tbs' => $this -> tbs()
 			);
 		$result = $this -> fetch("http://tieba.baidu.com/tbmall/lottery/draw", false);
@@ -500,6 +537,6 @@ EOF;
 			 * 奖品信息
 			 */
 			);
-		return $this -> common_return($result);
+		return $this -> commonReturn($result);
 	} 
 } 

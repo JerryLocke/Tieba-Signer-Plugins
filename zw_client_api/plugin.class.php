@@ -8,7 +8,7 @@ class plugin_zw_client_api extends Plugin {
 		global $uid;
 		$status = -1;
 		$msg = "未登录！";
-		$data = array('time' => time());
+		$data = array('time' => time()); 
 		// NOTICE : Just For Test;
 		/**
 		 * if ($_SERVER['HTTP_USER_AGENT'] != 'Android Client For Tieba Signer') {
@@ -43,13 +43,19 @@ class plugin_zw_client_api extends Plugin {
 			$status = 0;
 			$msg = "";
 			require_once ROOT . './plugins/zw_client_api/baidu.php';
-			$baidu = new baidu(get_cookie($uid));
+			$binded_baidu = true;
+			try {
+				$baidu = new baidu(get_cookie($uid));
+			} 
+			catch(Exception $e) {
+				if ($e -> getCode() == 10) $binded_baidu = false;
+			} 
 			switch ($_GET['a']) {
 				case 'baidu_account_info':
 					$msg = "百度账号信息";
 					$baidu_account_info = get_baidu_userinfo($uid);
-					$baidu_account_extra_info = $baidu -> get_user_info();
-					$data = array('username' => $baidu_account_info['data']['user_name_show'], 'email' => $baidu_account_info['data']['email'], 'mobilephone' => $baidu_account_info['data']['mobilephone'], 'sex' => $baidu_account_extra_info['i']['sex'], 'tb_age' => $baidu_account_extra_info['i']['tb_age'], 'fans_num' => $baidu_account_extra_info['i']['fans_num'], 'follow_num' => $baidu_account_extra_info['i']['concern_num'], 'tb_num' => $baidu_account_extra_info['i']['like_forum_num'],);
+					$baidu_account_extra_info = $baidu -> fetchClientUserInfo();
+					$data = array('username' => $baidu_account_info['data']['user_name_show'], 'email' => $baidu_account_info['data']['email'], 'mobilephone' => $baidu_account_info['data']['mobilephone'], 'sex' => $baidu_account_extra_info['sex'], 'tb_age' => $baidu_account_extra_info['tb_age'], 'fans_num' => $baidu_account_extra_info['fans_num'], 'follow_num' => $baidu_account_extra_info['concern_num'], 'tb_num' => $baidu_account_extra_info['like_forum_num'], 'intro' => $baidu_account_extra_info['intro'], 'tiebas' => $baidu -> fetchClientLikedForumList(),);
 					break;
 				case 'sign_log':
 					$msg = "获取成功";
@@ -63,11 +69,12 @@ class plugin_zw_client_api extends Plugin {
 					$data['count'] = count($data['log']);
 					$data['before_date'] = DB :: result_first("SELECT date FROM sign_log WHERE uid='{$uid}' AND date<'{$date}' ORDER BY date DESC LIMIT 0,1");
 					$data['after_date'] = DB :: result_first("SELECT date FROM sign_log WHERE uid='{$uid}' AND date>'{$date}' ORDER BY date ASC LIMIT 0,1");
-					break;
+					break; 
 				// NOTICE : Just For Test;
-				case 'test':
-					$data = $baidu -> get_user_info(); 
+				case 'test': 
+					// $data = $baidu -> get_user_info();
 					// echo var_dump($baidu);
+					$data = $baidu -> fetchClientLikedForumList();
 					break;
 			} 
 		} 
