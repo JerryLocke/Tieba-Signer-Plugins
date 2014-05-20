@@ -471,7 +471,8 @@ EOF;
 				'weiniang',
 				'renyao'
 		);
-		if(is_null($meizhi_uid)) $meizhi_uid = self::fetchWebUserPanel($meizhi_un)['uid'];
+		$meizhi_uid = self::fetchWebUserPanel($meizhi_un);
+		if(is_null($meizhi_uid)) $meizhi_uid = $meizhi_uid['uid'];
 		$this->formData = array(
 				'content'   => '',
 				'tbs'       => $this->tbs(),

@@ -74,7 +74,7 @@ class plugin_zw_client_api extends Plugin {
 				case 'test': 
 					// $data = $baidu -> get_user_info();
 					// echo var_dump($baidu);
-					$data = $baidu -> fetchFansList();
+					$data = $baidu -> fetchClientUserInfo();
 					break;
 			} 
 		} 
