@@ -1,6 +1,6 @@
 <?php
 /*
- * baidu class | Version 1.0.0 | Copyright 2014, Cai Cai | Released under the MIT license
+ * baidu class | Version 1.0.1 | Copyright 2014, Cai Cai | Released under the MIT license
  * login、sign、post、zan、meizhi、tdou
  */
 class BaiduUtil{
@@ -97,6 +97,11 @@ class BaiduUtil{
 		$this->formData      = array();
 		$this->lastFetch      = $result;
 		return $result;
+	}
+
+	public function returnThis(){
+		$this->returnThis = TRUE;
+		return $this;
 	}
 
 	public static function simpleFetch($url){
@@ -463,9 +468,10 @@ EOF;
 			$this->bduss = $result['user']['BDUSS'];
 			$this->cookie = $this->buildFullCookie();
 			$result['i'] = array(
-					"id"    => $result['user']['id'],
-					"name"  => $result['user']['name'],
-					"bduss" => $result['user']['BDUSS'],
+					"uid"    => $result['user']['id'],
+					"un"  => $result['user']['name'],
+					"bduss" => $this->bduss,
+					"cookie"=>$this->cookie,
 			);
 		}elseif($result['error_code'] == 5){
 			$result['i'] = array(
