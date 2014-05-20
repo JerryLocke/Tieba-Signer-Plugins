@@ -42,10 +42,10 @@ class plugin_zw_client_api extends Plugin {
 		} elseif ($uid) {
 			$status = 0;
 			$msg = "";
-			require_once ROOT . './plugins/zw_client_api/baidu.php';
+			require_once ROOT . './plugins/zw_client_api/BaiduUtil.php';
 			$binded_baidu = true;
 			try {
-				$baidu = new baidu(get_cookie($uid));
+				$baiduUtil = new BaiduUtil(get_cookie($uid));
 			} 
 			catch(Exception $e) {
 				if ($e -> getCode() == 10) $binded_baidu = false;
@@ -53,9 +53,8 @@ class plugin_zw_client_api extends Plugin {
 			switch ($_GET['a']) {
 				case 'baidu_account_info':
 					$msg = "百度账号信息";
-					$baidu_account_info = get_baidu_userinfo($uid);
-					$baidu_account_extra_info = $baidu -> fetchClientUserInfo();
-					$data = array('username' => $baidu_account_info['data']['user_name_show'], 'email' => $baidu_account_info['data']['email'], 'mobilephone' => $baidu_account_info['data']['mobilephone'], 'avatar' => $baidu_account_extra_info['data']['head_photo_h'], 'sex' => $baidu_account_extra_info['data']['sex'], 'tb_age' => $baidu_account_extra_info['data']['tb_age'], 'fans_num' => $baidu_account_extra_info['data']['fans_num'], 'follow_num' => $baidu_account_extra_info['data']['concern_num'], 'tb_num' => $baidu_account_extra_info['data']['like_forum_num'], 'intro' => $baidu_account_extra_info['data']['intro'], 'tiebas' => $baidu -> fetchClientLikedForumList(), 'follow' => $baidu -> fetchFollowList(), 'fans' => $baidu -> fetchFansList(),);
+					$baidu_account_info = $baiduUtil -> fetchClientUserInfo();
+					$data = array('username' => $baidu_account_info['data']['un'], 'avatar' => $baidu_account_info['data']['head_photo_h'], 'sex' => $baidu_account_info['data']['sex'], 'tb_age' => $baidu_account_info['data']['tb_age'], 'fans_num' => $baidu_account_info['data']['fans_num'], 'follow_num' => $baidu_account_info['data']['concern_num'], 'tb_num' => $baidu_account_info['data']['like_forum_num'], 'intro' => $baidu_account_info['data']['intro']?$baidu_account_info['data']['intro']:'这个家伙很懒，什么也没有留下', 'tiebas' => $baiduUtil -> fetchClientLikedForumList(), 'follow' => $baiduUtil -> fetchFollowList(), 'fans' => $baiduUtil -> fetchFansList(),);
 					break;
 				case 'sign_log':
 					$msg = "获取成功";
@@ -74,7 +73,7 @@ class plugin_zw_client_api extends Plugin {
 				case 'test': 
 					// $data = $baidu -> get_user_info();
 					// echo var_dump($baidu);
-					$data = $baidu -> fetchClientUserInfo();
+					$data = $baiduUtil -> fetchClientUserInfo();
 					break;
 			} 
 		} 
