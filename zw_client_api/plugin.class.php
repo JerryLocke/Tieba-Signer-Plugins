@@ -55,7 +55,7 @@ class plugin_zw_client_api extends Plugin {
 					$msg = "百度账号信息";
 					$baidu_account_info = get_baidu_userinfo($uid);
 					$baidu_account_extra_info = $baidu -> fetchClientUserInfo();
-					$data = array('username' => $baidu_account_info['data']['user_name_show'], 'email' => $baidu_account_info['data']['email'], 'mobilephone' => $baidu_account_info['data']['mobilephone'], 'sex' => $baidu_account_extra_info['sex'], 'tb_age' => $baidu_account_extra_info['tb_age'], 'fans_num' => $baidu_account_extra_info['fans_num'], 'follow_num' => $baidu_account_extra_info['concern_num'], 'tb_num' => $baidu_account_extra_info['like_forum_num'], 'intro' => $baidu_account_extra_info['intro'], 'tiebas' => $baidu -> fetchClientLikedForumList(),);
+					$data = array('username' => $baidu_account_info['data']['user_name_show'], 'email' => $baidu_account_info['data']['email'], 'mobilephone' => $baidu_account_info['data']['mobilephone'], 'sex' => $baidu_account_extra_info['data']['sex'], 'tb_age' => $baidu_account_extra_info['data']['tb_age'], 'fans_num' => $baidu_account_extra_info['data']['fans_num'], 'follow_num' => $baidu_account_extra_info['data']['concern_num'], 'tb_num' => $baidu_account_extra_info['data']['like_forum_num'], 'intro' => $baidu_account_extra_info['data']['intro'], 'tiebas' => $baidu -> fetchClientLikedForumList(), 'follow' => $baidu -> fetchFollowList(), 'fans' => $baidu -> fetchFansList(),);
 					break;
 				case 'sign_log':
 					$msg = "获取成功";
@@ -74,7 +74,7 @@ class plugin_zw_client_api extends Plugin {
 				case 'test': 
 					// $data = $baidu -> get_user_info();
 					// echo var_dump($baidu);
-					$data = $baidu -> fetchClientLikedForumList();
+					$data = $baidu -> fetchFansList();
 					break;
 			} 
 		} 
