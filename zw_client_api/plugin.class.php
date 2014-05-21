@@ -30,7 +30,7 @@ class plugin_zw_client_api extends Plugin {
 					$login_exp = TIMESTAMP + 3600;
 					do_login($user['uid']);
 					$msg = "欢迎回来，{$user['username']}！";
-					$data = array('username' => $user['username'], 'email' => $user['email']);
+					$data = array('uid' => $user['uid'], 'username' => $user['username'], 'email' => $user['email']);
 				} else {
 					$status = 2;
 					$msg = "用户名或密码错误，登录失败";
