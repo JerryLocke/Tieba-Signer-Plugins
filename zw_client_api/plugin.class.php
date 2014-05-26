@@ -5,21 +5,19 @@ class plugin_zw_client_api extends Plugin {
 	var $version = '1.0.0';
 
 	function handleAction() {
-		global $uid;
+		global $uid, $formhash;
 		$status = -1;
 		$msg = "未登录！";
 		$data = array('time' => time()); 
 		// NOTICE : Just For Test;
-		/**
-		 * if ($_SERVER['HTTP_USER_AGENT'] != 'Android Client For Tieba Signer') {
-		 * exit(json_encode(array('status' => -1, 'msg' => '非法操作', 'data' => '')));
-		 * } else
-		 */
+		// if ($_SERVER['HTTP_USER_AGENT'] != 'Android Client For Tieba Signer') {
+		// exit(json_encode(array('status' => -2, 'msg' => '非法操作', 'data' => '')));
+		// } else
 		if ($_GET['a'] == 'api_info') {
 			$status = 0;
 			$data = array('version' => '1.0.0', 'site' => $_SERVER["HTTP_HOST"]);
 		} elseif ($_GET['a'] == 'do_login') {
-			if ($_POST['username'] && $_POST['password']) {
+			if (!empty($_POST['username']) && !empty($_POST['password'])) {
 				$username = daddslashes($_POST['username']);
 				$password = md5(ENCRYPT_KEY . md5($_POST['password']) . ENCRYPT_KEY);
 				$un = strtolower($username);
@@ -30,7 +28,7 @@ class plugin_zw_client_api extends Plugin {
 					$login_exp = TIMESTAMP + 3600;
 					do_login($user['uid']);
 					$msg = "欢迎回来，{$user['username']}！";
-					$data = array('uid' => $user['uid'], 'username' => $user['username'], 'email' => $user['email']);
+					$data = array('uid' => $user['uid'], 'username' => $user['username'], 'email' => $user['email'], 'formhash' => substr(md5(substr(TIMESTAMP, 0, -7) . $user['username'] . $user['uid'] . ENCRYPT_KEY . ROOT), 8, 8));
 				} else {
 					$status = 2;
 					$msg = "用户名或密码错误，登录失败";
@@ -39,36 +37,40 @@ class plugin_zw_client_api extends Plugin {
 				$status = 1;
 				$msg = "用户名或密码不得为空!";
 			} 
+		} elseif ($formhash != $_GET['formhash']) {
+			$status = -2;
+			$msg = '非法操作';
 		} elseif ($uid) {
 			$status = 0;
 			$msg = "";
 			require_once ROOT . './plugins/zw_client_api/BaiduUtil.php';
 			$binded_baidu = true;
 			$cookie = get_cookie($uid);
-			if(empty($cookie)) {
+			if (empty($cookie)) {
 				$binded_baidu = false;
-			}else{
+			} else {
 				try {
 					$baiduUtil = new BaiduUtil(get_cookie($uid));
 				} 
 				catch(Exception $e) {
 					if ($e -> getCode() == -99) $binded_baidu = false;
-				}
-			}
+				} 
+			} 
 			switch ($_GET['a']) {
 				case 'baidu_account_info':
 					if ($binded_baidu) {
 						$msg = "百度账号信息";
-						try{
+						try {
 							$baidu_account_info = $baiduUtil -> fetchClientUserInfo();
 							$baidu_account_tieba_list = $baiduUtil -> fetchClientLikedForumList();
 							$baidu_account_follow_list = $baiduUtil -> fetchFollowList(4);
 							$baidu_account_fans_list = $baiduUtil -> fetchFansList(4);
 							$data = array('id' => $baidu_account_info['data']['id'], 'username' => $baidu_account_info['data']['un'], 'avatar' => $baidu_account_info['data']['head_photo_h'], 'sex' => $baidu_account_info['data']['sex'], 'tb_age' => $baidu_account_info['data']['tb_age'], 'fans_num' => $baidu_account_info['data']['fans_num'], 'follow_num' => $baidu_account_info['data']['concern_num'], 'tb_num' => $baidu_account_info['data']['like_forum_num'], 'intro' => $baidu_account_info['data']['intro']?$baidu_account_info['data']['intro']:'这个家伙很懒，什么也没有留下', 'tiebas' => $baidu_account_tieba_list['data'] ? $baidu_account_tieba_list['data'] : array(), 'follow' => $baidu_account_follow_list['data'], 'fans' => $baidu_account_fans_list['data'],);
-						}catch(Exception $e){
+						} 
+						catch(Exception $e) {
 							$status = "3";
-							$msg = '助手站点错误：'.$e->getMessage();
-						}
+							$msg = '助手站点错误：' . $e -> getMessage();
+						} 
 					} else {
 						$status = 1;
 						$msg = "未绑定百度账号";
