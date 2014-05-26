@@ -7,7 +7,7 @@ class plugin_zw_client_api extends Plugin {
 	function handleAction() {
 		global $uid, $formhash;
 		$status = -1;
-		$msg = "未登录！";
+		$msg = '未登录！';
 		$data = array('time' => time()); 
 		// NOTICE : Just For Test;
 		// if ($_SERVER['HTTP_USER_AGENT'] != 'Android Client For Tieba Signer') {
@@ -31,11 +31,11 @@ class plugin_zw_client_api extends Plugin {
 					$data = array('uid' => $user['uid'], 'username' => $user['username'], 'email' => $user['email'], 'formhash' => substr(md5(substr(TIMESTAMP, 0, -7) . $user['username'] . $user['uid'] . ENCRYPT_KEY . ROOT), 8, 8));
 				} else {
 					$status = 2;
-					$msg = "用户名或密码错误，登录失败";
+					$msg = '用户名或密码错误，登录失败';
 				} 
 			} else {
 				$status = 1;
-				$msg = "用户名或密码不得为空!";
+				$msg = '用户名或密码不得为空!';
 			} 
 		} elseif ($formhash != $_GET['formhash']) {
 			$status = -2;
@@ -59,7 +59,7 @@ class plugin_zw_client_api extends Plugin {
 			switch ($_GET['a']) {
 				case 'baidu_account_info':
 					if ($binded_baidu) {
-						$msg = "百度账号信息";
+						$msg = '百度账号信息';
 						try {
 							$baidu_account_info = $baiduUtil -> fetchClientUserInfo();
 							$baidu_account_tieba_list = $baiduUtil -> fetchClientLikedForumList();
@@ -77,7 +77,7 @@ class plugin_zw_client_api extends Plugin {
 					} 
 					break;
 				case 'sign_log':
-					$msg = "获取成功";
+					$msg = '获取成功';
 					$date = intval($_GET['date']);
 					$data['date'] = $date;
 					$data['log'] = array();
@@ -91,6 +91,10 @@ class plugin_zw_client_api extends Plugin {
 					$data['previous_date'] = $previous_date ? $previous_date : '0';
 					$data['next_date'] = $next_date ? $next_date : '0';
 					break; 
+				case 'cloud_info':
+					$msg = '获取成功';
+					$data['sid'] = cloud::id();
+					break;
 				// NOTICE : Just For Test;
 				case 'test': 
 					// $data = $baidu -> get_user_info();
