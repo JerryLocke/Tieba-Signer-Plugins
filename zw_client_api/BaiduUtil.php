@@ -21,14 +21,15 @@ class BaiduUtil{
 	protected $forumPages = array();
 
 	public function __construct($cookie = NULL, $userinfo = array(), $client = NULL){
-		if(empty($cookie)) throw new Exception('请输入合法的cookie',-99);
-		else{
+		if(!is_null($cookie)){
 			$cookie = trim($cookie);
-			if(stripos($cookie,'bduss=') === FALSE && stripos($cookie,';') === FALSE){
+			$temCookieHasBduss = stripos($cookie,'bduss=');
+			$temCookieHasSemicolon = stripos($cookie,';');
+			if($temCookieHasBduss === FALSE &&  $temCookieHasSemicolon === FALSE){
 				$this->bduss = $cookie;
-			}elseif(stripos($cookie,'bduss=') !== FALSE && stripos($cookie,';') === FALSE){
+			}elseif($temCookieHasBduss !== FALSE && $temCookieHasSemicolon === FALSE){
 				$this->bduss = substr($cookie,6);
-			}elseif(preg_match('/bduss\s?=\s?([^ ;]*)/i',$cookie,$matches)){
+			}elseif(preg_match('/bduss\s?=\s?([^ ;]*)/i', $cookie, $matches)){
 				$this->bduss = $matches[1];
 			}else{
 				throw new Exception('请输入合法的cookie',-99);
@@ -156,18 +157,28 @@ class BaiduUtil{
 		return $hash;
 	}
 
-	public function clientRelogin(){
+	protected function clientRelogin(){
 		$this->formData = array(
 				'bdusstoken' => $this->bduss
 		);
 		$result = $this->fetch('http://c.tieba.baidu.com/c/s/login');
-		if($result['error_code'] != 0) throw new Exception('Relogin失败',-15);
+		if($result['error_code'] != 0){
+			switch ($result['error_code']) {
+				case 1:
+				case 1990006:
+					throw new Exception('用户未登录或登录失败，请更换账号或重试',-19);
+					break;
+				default:
+					throw new Exception('Relogin失败,status:'.$result['error_code'].',msg'.$result['error_msg'],-15);
+					break;
+			}
+		}
 	}
 
 	public function un(){
 		if(empty($this->un)) $this->clientRelogin();
 		if(empty($this->un)){
-			$result = $this->fetchWebUserInfo();
+			$result = $this->fetchWebUserPrivateInfo();
 			$this->un = $result['data']['un'];
 		}
 		return $this->un;
@@ -190,7 +201,7 @@ class BaiduUtil{
 		return $result['tbs'];
 	}
 
-	public function fetchWebUserInfo(){
+	public function fetchWebUserPrivateInfo(){
 		$result = $this->fetch('http://tieba.baidu.com/f/user/json_userinfo',FALSE);
 		$temData = $result['data'];
 		$result['i'] = array(
@@ -202,7 +213,7 @@ class BaiduUtil{
 		return $this->commonReturn($result);
 	}
 
-	public static function fetchWebUserPanel($un){
+	public static function fetchWebUserInfo($un){
 		$result = self::simpleFetch('http://tieba.baidu.com/home/get/panel?ie=utf-8&un=' . urlencode($un));
 		switch ($result['data']['sex']) {
 			case 'female':
@@ -226,9 +237,19 @@ class BaiduUtil{
 		return $data;
 	}
 
+	public static function fetchUid($un){
+		$result = self::fetchWebUserInfo($un);
+		return $result['data']['uid'];
+	}
+
+	public static function fetchHeadPhoto($un){
+		$result = self::fetchWebUserInfo($un);
+		return $result['data']['head_photo'];
+	}
+
 	public function fetchWebMeizhiPanel($uid,$un=NULL){
 		if(!is_null($un) && is_null($uid)){
-			$temUserInfo = self::fetchWebUserPanel($un);
+			$temUserInfo = self::fetchWebUserInfo($un);
 			$uid = $temUserInfo['data']['uid'];
 		}
 		$this->formData = array(
@@ -473,7 +494,9 @@ EOF;
 			}
 			$result = $this->fetch('http://c.tieba.baidu.com/c/s/login',TRUE,FALSE);
 			if($result['error_code'] == 0){
-				$this->bduss = $result['user']['BDUSS'];
+				$temRawBduss = $result['user']['BDUSS'];
+				preg_match('/(.*)\|/', $temRawBduss, $matches);
+				$this->bduss = $matches[1];
 				$this->cookie = $this->buildFullCookie();
 				$result['i'] = array(
 						"uid"    => $result['user']['id'],
@@ -599,14 +622,14 @@ EOF;
 
 	public function meizhi($meizhi_uid = NULL, $votetype = 0, $meizhi_kw = NULL, $meizhi_fid = NULL){
 		try{
-			$votetype_list = array(
+			$votetypeList = array(
 					'meizhi',
 					'meizhi',
 					'weiniang',
 					'renyao',
 			);
 			if(is_null($meizhi_uid)){
-				$temResult = self::fetchWebUserPanel($meizhi_un);
+				$temResult = self::fetchWebUserInfo($meizhi_un);
 				$meizhi_uid = $temResult['data']['uid'];
 			}
 			$this->formData = array(
@@ -616,7 +639,7 @@ EOF;
 					'kw'        => $meizhi_kw?$meizhi_kw:'妹纸',
 					'uid'       => $meizhi_uid,
 					'scid'      => $this->uid(),
-					'vtype'     => $votetype_list[$votetype],
+					'vtype'     => $votetypeList[$votetype],
 					'ie'        => 'utf-8',
 					'vcode'     => '',
 					'new_vcode' => '1',
@@ -726,5 +749,4 @@ EOF;
 	}
 
 }
-
 
