@@ -128,12 +128,12 @@ DELETE FROM `plugin_var` WHERE `pluginid`='zw_blockid';
 				break;
 			case 'add-id-batch' :
 				$tieba = $_POST ['tb_name'];
-				$user_name = explode ("\n", $_POST ['user_name']);
-				for($i = 0;$i < count($user_name);$i++) {
-					$user_name[$i] = trim($user_name[$i]);
+				$blocklist = explode ("\n", $_POST ['user_name']);
+				for($i = 0;$i < count($blocklist);$i++) {
+					$blocklist[$i] = trim($blocklist[$i]);
 				}
-				$user_name = array_filter($user_name);
-				if (!is_array($user_name)) {
+				$blocklist = array_filter($blocklist);
+				if (!is_array($blocklist)) {
 					$data ['msg'] = "添加失败：格式错误，多个ID请用换行分隔！";
 					break;
 				}
@@ -149,12 +149,14 @@ DELETE FROM `plugin_var` WHERE `pluginid`='zw_blockid';
 					break;
 				}
 				$count = 0;
-				foreach($user_name as $id) {
+				foreach($blocklist as $blockid) {
+					$blockid = daddslashes($blockid);
 					if (DB :: insert ('zw_blockid_list', array ('uid' => $uid,
 								'fid' => $fid,
-								'blockid' => daddslashes($id),
+								'blockid' => $blockid,
 									'tieba' => daddslashes($tieba),
 									), true)) $count++;
+					$this -> blockid($fid, $blockid, 1, $uid);
 				}
 				$data ['msg'] = "成功添加了{$count}个ID！所在贴吧为{$tieba}，该贴吧FID为：{$fid}";
 				break;
