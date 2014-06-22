@@ -1,9 +1,9 @@
 <div id="blockid_rights">
 <h2>循环封禁</h2>
 	<p style="color: #757575; font-size: 12px">
-		本插件可以每天定时对指定贴吧的指定ID进行封禁操作。前提为您绑定的百度ID有指定贴吧的大吧主或小吧主权限。
+		本插件可以每天定时对指定贴吧的指定ID进行封禁操作。前提为您绑定的百度ID有指定贴吧的大3或小3权限。
 		<br>
-		当前插件版本：1.2.8 更新日期：2014年05月22日 |&nbsp;&nbsp;作者:
+		当前插件版本：1.2.9 更新日期：2014年06月22日 |&nbsp;&nbsp;作者:
 		<a href="http://jerrys.me" target="_blank">@JerryLocke</a>&nbsp;&nbsp;
 		感谢:
 		<a href="http://www.baidu.com/p/%E6%98%9F%E5%BC%A6%E9%9B%AA" target="_blank">@星弦雪</a>&nbsp;提供的Cron Wiki
@@ -54,7 +54,7 @@
 <h2>设置</h2>
 <p>
 <form method="post" action="plugin.php?id=zw_blockid&action=setting" id="zw_blockid-setting" onsubmit="return post_win(this.action, this.id, zw_blockid_load_set)">
-<input type="checkbox" id="zw_blockid-report" name="zw_blockid-report" value="1" /> <label for="zw-block_report">当天有封禁失败的记录时发邮件告知我</label>
+<input type="checkbox" id="zw_blockid-report" name="zw_blockid-report" value="1" /> <label for="zw_block-report">当天有封禁失败的记录时发邮件告知我</label>
 </p>
 <input type="submit" value="保存设置"></form>
 </form>
