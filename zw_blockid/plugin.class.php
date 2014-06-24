@@ -90,7 +90,21 @@ DELETE FROM `plugin_var` WHERE `pluginid`='zw_blockid';
 			return '1.2.8';
 		}
 		if ($nowversion == '1.2.8') {
-			runquery("ALTER TABLE  `zw_blockid_list` ADD UNIQUE (`uid` ,`fid` ,`blockid` ,`tieba`);");
+			runquery("CREATE TABLE IF NOT exists `zw_blockid_list_tmp` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `uid` int(10) unsigned NOT NULL,
+  `fid` int(10) unsigned NOT NULL,
+  `blockid` varchar(20) NOT NULL,
+  `tieba` varchar(200) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uid` (`uid`,`fid`,`blockid`,`tieba`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+INSERT INTO `zw_blockid_list_tmp`(uid, fid, blockid, tieba) SELECT DISTINCT uid, fid, blockid, tieba FROM `zw_blockid_list`;
+DELETE FROM `zw_blockid_list`;
+INSERT INTO `zw_blockid_list`(uid, fid, blockid, tieba) SELECT DISTINCT uid, fid, blockid, tieba FROM `zw_blockid_list_tmp`;
+DROP TABLE `zw_blockid_list_tmp`;
+ALTER TABLE `zw_blockid_list` ADD UNIQUE (`uid` ,`fid` ,`blockid` ,`tieba`);
+");
 		}
 	}
 
@@ -128,12 +142,12 @@ DELETE FROM `plugin_var` WHERE `pluginid`='zw_blockid';
 				break;
 			case 'add-id-batch' :
 				$tieba = $_POST ['tb_name'];
-				$blocklist = explode ("\n", $_POST ['user_name']);
-				for($i = 0;$i < count($blocklist);$i++) {
-					$blocklist[$i] = trim($blocklist[$i]);
+				$user_name = explode ("\n", $_POST ['user_name']);
+				for($i = 0;$i < count($user_name);$i++) {
+					$user_name[$i] = trim($user_name[$i]);
 				}
-				$blocklist = array_filter($blocklist);
-				if (!is_array($blocklist)) {
+				$user_name = array_filter($user_name);
+				if (!is_array($user_name)) {
 					$data ['msg'] = "添加失败：格式错误，多个ID请用换行分隔！";
 					break;
 				}
@@ -149,14 +163,12 @@ DELETE FROM `plugin_var` WHERE `pluginid`='zw_blockid';
 					break;
 				}
 				$count = 0;
-				foreach($blocklist as $blockid) {
-					$blockid = daddslashes($blockid);
+				foreach($user_name as $id) {
 					if (DB :: insert ('zw_blockid_list', array ('uid' => $uid,
 								'fid' => $fid,
-								'blockid' => $blockid,
+								'blockid' => daddslashes($id),
 									'tieba' => daddslashes($tieba),
 									), true)) $count++;
-					$this -> blockid($fid, $blockid, 1, $uid);
 				}
 				$data ['msg'] = "成功添加了{$count}个ID！所在贴吧为{$tieba}，该贴吧FID为：{$fid}";
 				break;
